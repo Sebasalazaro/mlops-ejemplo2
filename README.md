@@ -1,103 +1,166 @@
-# UNIVERSIDAD EAFIT
-# 2025-2
-# PROFESOR: EDWIN MONTOYA – emontoya@eafit.edu.co
+# Parking Availability Forecasting System
 
-MLOps – ejemplo 2
+<div align="center">
 
-Contexto: 3. Automatización del data pipeline
+An automated MLOps pipeline that predicts parking spot availability in Donostia, Spain using time series forecasting. The system continuously collects real-time parking data via GitHub Actions and trains machine learning models to predict availability up to 48 hours in advance.
 
-# Problema:
+<br/>
 
-Se desea crear un script y automatización para la descarga de datos que se actualizan periódicamente de una API en Internet y ser almacenados como los datos crudos (raw) de un proyecto de ML. Se tienen los scripts de captura de datos y la automatización desde Github Actions. Si bien los datos actualizados vuelven al repositorio, la Automatización del podría llegar al DataLake o BD para las siguientes fases de preparación de datos, EDA o ingeniería de características.
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white) ![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
 
-Los datos son de la disponibilidad de celdas libres en diferentes parqueaderos de una ciudad, de tal manera que podamos realizar un modelo predictivo con días / horas de anticipación de hacia cual parqueadero dirigirse en caso de necesitar uno.
+</div>
 
-## Predicción de celdas libres en parqueaderos de Donostia (España)
+## Overview
 
-Este ejemplo construye un pipeline de MLOps para un modelo que predice el número de celdas de parqueaderos en Donostia (españa).
+This project demonstrates a complete MLOps workflow for time series forecasting. It automatically extracts parking availability data from the Donostia municipal API every hour, stores historical records, and trains forecasting models using Random Forest regressors optimized through grid search.
 
-Por ahora incluye la automatización de la extracción de datos.
+The pipeline addresses a real-world problem: available parking spots aren't tracked historically by the city, making predictive modeling impossible without building a data collection system first.
 
-### Automatización de extracción de datos con Github Actions
+**Key Features:**
+- Automated data extraction with GitHub Actions (runs hourly)
+- Time series forecasting using `skforecast` library
+- Hyperparameter optimization via grid search
+- Modular, production-ready code structure
+- Comprehensive logging and error handling
 
-La ciudad de Donostia no provee datos históricos de celdas libres en parqueaderos. Es por ello, que debemos crear una extracción periódica para crear datos históricos.
+## Architecture
 
-La extracción se hace con el archivo: `extract_data.py` ubicado en la carpeta: `data_extraction`. 
+```
+┌─────────────────┐
+│  Donostia API   │ ← Real-time parking data
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  GitHub Actions     │ ← Runs every hour
+│  (Data Extraction)  │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│   data/data.csv     │ ← Historical dataset
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Training Pipeline  │ ← Grid search + validation
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  models/model.pkl   │ ← Trained forecaster
+└─────────────────────┘
+```
 
-`extract_data.py` hace llamados al endpoint donde los datos reciden, y los va agregando en el archivo: `data.csv` en la carpeta `data`. 
+## Quick Start
 
-El archivo `data_extraction/update_data.sh` envia (push) los datos generados al Github. 
+### Prerequisites
 
-La ejecución de estos dos archivos es automatizados a través de `update_data.yml` ejecutado como un Github Action workflow, ejecutado cada 2 horas.
-
-Datos Fuente: 
-
-- https://www.donostia.eus/info/ciudadano/camaras_trafico.nsf/getParkings.xsp' 
-
-Ingesta: 
-
-- Crawler o robot en python (extract_data.py)
-- Automatizado en ejecución cada hora, en github Actions
-
-Almacenamiento:
-
-- Queda almacenado en el repositorio github/data/data.csv
-
-Procesamiento: 
-
-- Ninguno para este ejemplo
-
-Aplicación: 
-
-- Ninguna para este ejemplo
- 
-## ETAPAS CICLO DE VIDA DATOS:
-
-1.	Data source: API en Internet de parqueaderos libres en una ciudad
-2.	Ingesta: Automática con Github Actions
-
-    a.	PIPELINE PARA COLECTAR DATOS (.github/workflows/update_data.yml y data_extraction/update_data.sh)
-
-    b.	Paso 1: configurar ambiente python3.9
-
-    c.	Paso 2: ejecutar script: data_extraction/extract_data.py
-
-    d.	Paso 3: enviar datos actualizados al mismo repo github en data/data.csv con el script: data_extraction/update_data.sh
-
-
-3.	DATOS DE ENTRENAMIENTO – en repositorio github: data/data.csv
-4.	ENTRENAMIENTO – sin especificar
-5.	MODELOS ENVIADOS A GITHUB: sin especificar
-
-
-### Consideración: generar API Token de github para permitir actualizar el repo:
-
-* DEBE CONFIGURAR UNA VARIABLE DE AMBIENTE GH_TOKEN EN Github-Settings-> Developer Settings -> Personal access token - > Tokens
-
-* LUEGO DENTRO DEL REPOSITORIO: Settings -> Secrets and variables -> Actions -> Secrets -> Environment secrets
-
-* Adicionar el access token al script: .github/workflows/update_data.yml:
-
-* git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/edwinm67/mlops-ejemplo2.git
-
-
-## TECNOLOGIAS:
-
-LOCAL:
- 
-- Python 3.9
-- Visual Studio Code
+- Python 3.9+
 - Git
 
-NUBE:
+### Installation
 
-- Cuenta github
-- Servicios:
-    - Github Actions
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/parking-forecasting-mlops.git
+cd parking-forecasting-mlops
 
-## PROCEDIMIENTO:
+# Install dependencies
+pip install -r requirements.txt
 
-1.	Clonar repo de clase:
+# Set up configuration
+cp config/.env.example .env
+```
+
+### Usage
+
+**Extract Parking Data:**
+```bash
+python scripts/extract_data.py
+```
+
+**Train Forecasting Model:**
+```bash
+python src/train.py
+```
+
+**Automated Data Collection:**
+
+The GitHub Actions workflow automatically runs `extract_data.py` every hour. To set up:
+
+1. Create a GitHub Personal Access Token with `repo` permissions
+2. Add it as a repository secret named `GH_TOKEN`
+3. Update the repository URL in `.github/workflows/update_data.yml`
+
+## Project Structure
+
+```
+parking-forecasting-mlops/
+├── .github/
+│   └── workflows/
+│       └── update_data.yml      # Automated data extraction workflow
+├── config/
+│   └── .env.example             # Configuration template
+├── data/
+│   └── data.csv                 # Historical parking data
+├── docs/
+│   └── ARCHITECTURE.md          # Detailed architecture documentation
+├── models/                      # Trained models directory
+├── scripts/
+│   ├── extract_data.py          # API data extraction script
+│   └── update_data.sh           # Git push automation
+├── src/
+│   ├── __init__.py
+│   ├── config.py                # Centralized configuration
+│   └── train.py                 # Model training pipeline
+├── .gitignore
+├── LICENSE
+├── README.md
+└── requirements.txt
+```
+
+## Configuration
+
+Edit `.env` or set environment variables:
+
+- `PARKING_NAME`: Target parking lot name (default: "Boulevard")
+- `PREDICTION_STEPS`: Forecast horizon in hours (default: 48)
+
+Model hyperparameters can be adjusted in [src/config.py](src/config.py).
+
+## Model Details
+
+- **Algorithm**: Random Forest Regressor with Autoregressive features
+- **Framework**: skforecast (specialized for time series forecasting)
+- **Optimization**: Grid search over lag configurations and RF hyperparameters
+- **Validation**: Time-based train-test split with forward chaining
+
+**Hyperparameters Tuned:**
+- Number of estimators: [100, 500]
+- Max depth: [3, 5, 10]
+- Lag configurations: [24, 48, 72 hours]
+
+## Data Source
+
+Parking availability data is sourced from the Donostia City Council's open API:
+- **Endpoint**: `https://www.donostia.eus/info/ciudadano/camaras_trafico.nsf/getParkings.xsp`
+- **Update Frequency**: Real-time
+- **Coverage**: All municipal parking facilities in Donostia/San Sebastián
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Sebastian Salazar**
+- Email: ssalazaro1@eafit.edu.co
+- GitHub: [@Sebasalazaro](https://github.com/Sebasalazaro)
+
+---
+
+*Developed as part of the Intensive Systems course at Universidad EAFIT (2025)*
 
 - https://github.com/edwinm67/mlops-ejemplo2.git 
 
